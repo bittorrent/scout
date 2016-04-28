@@ -1,0 +1,3 @@
+[submodule "ut_dht"]
+	path = ut_dht
+	url = git@github.com:bittorrent/ut_dht.git
