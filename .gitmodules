@@ -1,3 +1,6 @@
 [submodule "ut_dht"]
 	path = ut_dht
 	url = git@github.com:bittorrent/ut_dht.git
+[submodule "GSL"]
+	path = GSL
+	url = https://github.com/Microsoft/GSL.git
