@@ -50,6 +50,8 @@ std::pair<entry, gsl::span<gsl::byte const>> entry::parse(gsl::span<gsl::byte co
 {
 	entry_header header;
 	extract(gsl::span<entry_header const, 1>(header), input);
+	if (header.header_size < sizeof(entry_header))
+		throw std::invalid_argument("header size too small");
 	input = input.subspan(header.header_size);
 	entry e(header.seq, header.id, { input.begin(), input.begin() + header.content_length });
 	input = input.subspan(header.content_length);
@@ -111,6 +113,8 @@ gsl::span<gsl::byte const> parse(gsl::span<gsl::byte const> input, std::vector<e
 {
 	entries_header header;
 	extract(gsl::span<entries_header const, 1>(header), input);
+	if (header.header_size < sizeof(entries_header))
+		throw std::invalid_argument("header size too small");
 	input = input.subspan(header.header_size);
 
 	for (int i = 0; i < header.entry_count; ++i)
