@@ -1,0 +1,26 @@
+import modules ;
+import os ;
+
+BOOST_ROOT = [ modules.peek : BOOST_ROOT ] ;
+use-project /boost : $(BOOST_ROOT) ;
+
+ECHO "BOOST_ROOT =" $(BOOST_ROOT) ;
+ECHO "OS =" [ os.name ] ;
+
+use-project /ut_dht : ut_dht ;
+use-project /ut_utils : ut_dht/ut_utils ;
+
+lib scout
+	: # sources
+	src/scout.cpp
+	: # requirements
+	<include>GSL/include
+	<library>/ut_dht//ut_dht/<link>static
+	<library>/ut_utils//ut_utils/<link>static
+	<include>include
+	<include>$(BOOST_ROOT)
+	<target-os>windows:<define>_CRT_SECURE_NO_WARNINGS
+	<target-os>windows:<define>_SCL_SECURE_NO_WARNINGS
+	: # default build
+	: # usage requirements
+	;
