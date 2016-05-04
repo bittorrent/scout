@@ -20,6 +20,9 @@ class entry
 public:
 	entry(uint32_t id) : m_seq(0), m_id(id) {}
 
+	static std::pair<entry, gsl::span<gsl::byte const>> parse(gsl::span<gsl::byte const> input);
+	gsl::span<gsl::byte> serialize(gsl::span<gsl::byte> output) const;
+
 	uint32_t id() const { return m_id; }
 	std::vector<gsl::byte> const& value() const { return m_contents; }
 	void assign(gsl::span<gsl::byte const> contents)
@@ -28,10 +31,10 @@ public:
 		++m_seq;
 	}
 
-	// internal
-	entry(int64_t seq, uint32_t id) : m_seq(seq), m_id(id) {}
-
 private:
+	entry(int64_t seq, uint32_t id, std::vector<gsl::byte> content)
+		: m_contents(content), m_seq(seq), m_id(id) {}
+
 	std::vector<gsl::byte> m_contents;
 	int64_t m_seq;
 	uint32_t const m_id;
@@ -42,12 +45,15 @@ private:
 class list_token
 {
 public:
+	// input span must be extactly the size of the serialized token
+	static list_token parse(gsl::span<gsl::byte const> input);
+	gsl::span<gsl::byte> serialize(gsl::span<gsl::byte> output) const;
+
 	hash const& next() const { return m_next; }
 
-	// internal
-	explicit list_token(hash next) : m_next(next) {}
-
 private:
+	list_token(hash next) : m_next(next) {}
+
 	hash m_next;
 };
 
@@ -56,6 +62,15 @@ private:
 class list_head
 {
 public:
+	list_head()
+	{
+		m_head.fill(gsl::byte(0));
+	}
+
+	// input span must be extactly the size of the serialized list head
+	static list_head parse(gsl::span<gsl::byte const> input);
+	gsl::span<gsl::byte> serialize(gsl::span<gsl::byte> output) const;
+
 	// add an item to the linked-list
 	// the returned list_token should be stored with the contents and passed to put()
 	list_token push_front(gsl::span<gsl::byte const> contents);
@@ -65,18 +80,19 @@ public:
 	hash const& head() const { return m_head; }
 
 private:
+	list_head(hash head) : m_head(head) {}
+
 	hash m_head;
 };
 
-gsl::span<gsl::byte> serialize(entry const& entry, gsl::span<gsl::byte> output);
+// takes a span of entries and write them out to a buffer
+// returns a new span pointing to to one past the last byte used to store
+// the entries
 gsl::span<gsl::byte> serialize(gsl::span<entry const> entries, gsl::span<gsl::byte> output);
-gsl::span<gsl::byte> serialize(list_token const& item, gsl::span<gsl::byte> output);
-gsl::span<gsl::byte> serialize(list_head const& head, gsl::span<gsl::byte> output);
 
-gsl::span<gsl::byte const> parse(gsl::span<gsl::byte const> input, entry& entry);
+// parse a list of entries
+// returns a span pointing to one past the last byte used to store the entries
 gsl::span<gsl::byte const> parse(gsl::span<gsl::byte const> input, std::vector<entry>& entries);
-gsl::span<gsl::byte const> parse(gsl::span<gsl::byte const> input, list_token& item);
-gsl::span<gsl::byte const> parse(gsl::span<gsl::byte const> input, list_head& stack);
 
 // called when a new or updated entry is received from the DHT
 using entry_updated = std::function<void(std::vector<entry>::iterator e)>;
