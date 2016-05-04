@@ -45,6 +45,8 @@ private:
 class list_token
 {
 public:
+	friend class list_head;
+
 	// input span must be extactly the size of the serialized token
 	static list_token parse(gsl::span<gsl::byte const> input);
 	gsl::span<gsl::byte> serialize(gsl::span<gsl::byte> output) const;
