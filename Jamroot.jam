@@ -19,6 +19,7 @@ lib scout
 	<library>/ut_utils//ut_utils/<link>static
 	<include>include
 	<include>$(BOOST_ROOT)
+	<define>GSL_THROW_ON_CONTRACT_VIOLATION
 	<target-os>windows:<define>_CRT_SECURE_NO_WARNINGS
 	<target-os>windows:<define>_SCL_SECURE_NO_WARNINGS
 	: # default build
