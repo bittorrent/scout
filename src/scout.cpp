@@ -1,6 +1,7 @@
 #include "scout.hpp"
-#include <boost/endian/endian.hpp>
+#include <boost/endian/arithmetic.hpp>
 #include <memory>
+#include <cassert>
 
 namespace be = boost::endian;
 
@@ -12,7 +13,7 @@ namespace
 	template <typename T, std::ptrdiff_t... Dimensions>
 	gsl::span<gsl::byte const> extract(gsl::span<T, Dimensions...> dest, gsl::span<gsl::byte const> src)
 	{
-		static_assert(std::is_trivial<std::decay_t<T>>::value);
+		static_assert(std::is_trivial<std::decay_t<T>>::value, "Target type must be a trivial type");
 
 		if (src.size_bytes() < dest.size_bytes())
 			throw std::length_error("bytes span smaller than destination");
@@ -23,7 +24,7 @@ namespace
 	template <typename T, std::ptrdiff_t... Dimensions>
 	gsl::span<gsl::byte> flatten(gsl::span<gsl::byte> dest, gsl::span<T const, Dimensions...> src)
 	{
-		static_assert(std::is_trivial<std::decay_t<T>>::value);
+		static_assert(std::is_trivial<std::decay_t<T>>::value, "Target type must be a trivial type");
 
 		if (dest.size_bytes() < src.size_bytes())
 			throw std::length_error("source span larger than destination");
@@ -49,7 +50,7 @@ namespace
 std::pair<entry, gsl::span<gsl::byte const>> entry::parse(gsl::span<gsl::byte const> input)
 {
 	entry_header header;
-	extract(gsl::span<entry_header const, 1>(header), input);
+	extract(gsl::span<entry_header, 1>(header), input);
 	if (header.header_size < sizeof(entry_header))
 		throw std::invalid_argument("header size too small");
 	input = input.subspan(header.header_size);
@@ -64,7 +65,8 @@ gsl::span<gsl::byte> entry::serialize(gsl::span<gsl::byte> output) const
 	header.header_size = sizeof(entry_header);
 	header.id = id();
 	header.seq = m_seq;
-	header.content_length = value().size();
+	assert(value().size() <= (std::numeric_limits<uint8_t>::max)());
+	header.content_length = uint8_t(value().size());
 
 	output = flatten(output, gsl::span<entry_header const, 1>(header));
 	output = flatten(output, gsl::as_span(value()));
@@ -112,7 +114,7 @@ gsl::span<gsl::byte> serialize(gsl::span<entry const> entries, gsl::span<gsl::by
 gsl::span<gsl::byte const> parse(gsl::span<gsl::byte const> input, std::vector<entry>& entries)
 {
 	entries_header header;
-	extract(gsl::span<entries_header const, 1>(header), input);
+	extract(gsl::span<entries_header, 1>(header), input);
 	if (header.header_size < sizeof(entries_header))
 		throw std::invalid_argument("header size too small");
 	input = input.subspan(header.header_size);

@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <functional>
 #include <span.h>
-#include "ut_dht/src/dht.h"
+#include <dht.h>
 
 namespace scout
 {
