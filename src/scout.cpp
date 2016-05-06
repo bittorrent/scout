@@ -38,7 +38,11 @@ namespace
 		be::big_uint32_t id;
 		std::array<gsl::byte, 2> reserved;
 		uint8_t content_length;
-		uint8_t content_offset; // offset from this field to the first byte of content
+		// offset from this field to the first byte of content
+		// This is for extensibility. If we want to add more header fields
+		// later on we can increase the offset and old clients will apply
+		// the offset and skip the part of the header they don't understand.
+		uint8_t content_offset;
 	};
 
 	struct entries_header
