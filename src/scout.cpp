@@ -186,7 +186,6 @@ void put(IDht& dht, list_token const& token, gsl::span<gsl::byte const> contents
 		// cast the context pointer to a put_finished callback and call it:
 		put_finished callback = *((put_finished *)ctx);
 		callback();
-		//((put_finished)ctx)();
 		delete ctx;
 	};
 
