@@ -10,8 +10,10 @@ namespace scout
 
 using secret_key = std::array<gsl::byte, 32>;
 using secret_key_span = gsl::span<gsl::byte, 32>;
+using csecret_key_span = gsl::span<gsl::byte const, 32>;
 using hash = std::array<gsl::byte, 20>;
 using hash_span = gsl::span<gsl::byte, 20>;
+using chash_span = gsl::span<gsl::byte const, 20>;
 
 // a mutable blob of data
 // each entry has an id associated with it which must be unique among the entries it is stored with
@@ -31,9 +33,24 @@ public:
 		++m_seq;
 	}
 
+	// convenience function to save callers from having to do an
+	// explicit to_bytes
+	template <typename U, std::ptrdiff_t... Dimensions>
+	void assign(gsl::span<U, Dimensions...> s)
+	{
+		assign(gsl::as_bytes(s));
+	}
+
+	bool operator==(entry const& o) const
+	{
+		return m_id == o.m_id
+			&& m_seq == o.m_seq
+			&& m_contents == o.m_contents;
+	}
+
 private:
 	entry(int64_t seq, uint32_t id, std::vector<gsl::byte> content)
-		: m_contents(content), m_seq(seq), m_id(id) {}
+		: m_contents(std::move(content)), m_seq(seq), m_id(id) {}
 
 	std::vector<gsl::byte> m_contents;
 	int64_t m_seq;
@@ -52,6 +69,11 @@ public:
 	gsl::span<gsl::byte> serialize(gsl::span<gsl::byte> output) const;
 
 	hash const& next() const { return m_next; }
+
+	bool operator==(list_token const& o) const
+	{
+		return m_next == o.m_next;
+	}
 
 private:
 	list_token(hash next) : m_next(next) {}
@@ -80,6 +102,11 @@ public:
 	// get the hash of the head of the list
 	// this can be passed to get() to retrieve the first item in the list
 	hash const& head() const { return m_head; }
+
+	bool operator==(list_head const& o) const
+	{
+		return m_head == o.m_head;
+	}
 
 private:
 	list_head(hash head) : m_head(head) {}

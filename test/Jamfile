@@ -1,0 +1,61 @@
+import testing ;
+import modules ;
+
+BOOST_ROOT = [ modules.peek : BOOST_ROOT ] ;
+use-project /boost : $(BOOST_ROOT) ;
+use-project /parent : .. ;
+use-project /ut_dht : ../ut_dht ;
+
+GTEST_ROOT = ../ut_dht/ut_utils/vendor/gtest-1.6.0 ;
+GMOCK_ROOT = ../ut_dht/ut_utils/vendor/gmock-1.6.0 ;
+
+lib test_lib
+	: # sources
+	$(GTEST_ROOT)/src/gtest-all.cc
+	$(GMOCK_ROOT)/src/gmock-all.cc
+	$(GMOCK_ROOT)/src/gmock_main.cc
+	: # requirements
+	<library>/parent//scout/<link>static
+	<define>BOOST_ALL_NO_LIB
+	<toolset>gcc:<define>GTEST_USE_OWN_TR1_TUPLE=1
+	<toolset>darwin:<define>GTEST_USE_OWN_TR1_TUPLE=1
+
+	<include>$(GTEST_ROOT)/include
+	<include>$(GMOCK_ROOT)/include
+	<include>$(GTEST_ROOT)
+	<include>$(GMOCK_ROOT)
+
+	<include>../src
+	<include>/opt/local/include
+
+	: # default build
+	<link>static
+	: # usage requirements
+	<toolset>gcc:<define>GTEST_USE_OWN_TR1_TUPLE=1
+	<toolset>darwin:<define>GTEST_USE_OWN_TR1_TUPLE=1
+	<define>BOOST_ALL_NO_LIB
+
+	<include>$(GTEST_ROOT)/include
+	<include>$(GMOCK_ROOT)/include
+	<include>$(GTEST_ROOT)
+	<include>$(GMOCK_ROOT)
+	<include>../include
+	<include>../GSL/include
+	<include>../src
+	<include>/opt/local/include
+
+	;
+
+project
+	: requirements
+	<library>test_lib/<link>static
+	<library>/parent//scout/<link>static
+	<define>BOOST_ALL_NO_LIB
+	;
+
+test-suite communicator-tests :
+	[ run test_serialization.cpp ]
+	;
+	
+# build-project ../ut_dht/unittests ;
+# build-project ../ut_dht/ut_utils/unittests ;
