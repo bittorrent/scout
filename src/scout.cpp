@@ -56,7 +56,7 @@ namespace
 	struct dht_msg_header
 	{
 		hash next_hash;
-		uint16_t msg_length;
+		be::big_uint16_t msg_length;
 		uint8_t msg_offset;
 	};
 }
@@ -150,7 +150,7 @@ gsl::span<gsl::byte const> parse(gsl::span<gsl::byte const> input, std::vector<e
 // format the dht blob for a message in the linked list (message data and hash of the next message):
 std::vector<gsl::byte> message_dht_blob_write(gsl::span<gsl::byte const> msg_data, chash_span next_msg_hash)
 {
-	std::vector<gsl::byte> blob(msg_data.size() + 100);
+	std::vector<gsl::byte> blob(msg_data.size() + sizeof(dht_msg_header));
 	
 	gsl::span<gsl::byte> output = gsl::as_span(blob);
 
@@ -163,8 +163,6 @@ std::vector<gsl::byte> message_dht_blob_write(gsl::span<gsl::byte const> msg_dat
 	output = flatten(blob, gsl::span<dht_msg_header const, 1>(header));
 	// serialize the message:
 	output = flatten(blob, msg_data);
-
-	blob.resize(blob.size() - output.size());
 
 	return blob;
 }
