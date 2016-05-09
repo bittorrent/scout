@@ -52,6 +52,13 @@ namespace
 		uint8_t entry_count;
 		uint8_t entries_offset; // offset from this field to the first entry
 	};
+
+	struct dht_msg_header
+	{
+		hash next_hash;
+		uint16_t msg_length;
+		uint8_t msg_offset;
+	};
 }
 
 // do any global initialization for the scout library here:
@@ -140,19 +147,28 @@ gsl::span<gsl::byte const> parse(gsl::span<gsl::byte const> input, std::vector<e
 	return input;
 }
 
-// format the dht blob for an offline message (msg data + hash of next dht blob in the list):
-std::vector<byte> message_dht_blob_write(gsl::span<gsl::byte const> contents, gsl::span<gsl::byte const> prev_msg_hash)
+// format the dht blob for a message in the linked list (message data and hash of the next message):
+std::vector<gsl::byte> message_dht_blob_write(gsl::span<gsl::byte const> msg_data, chash_span next_msg_hash)
 {
-	std::vector<byte> blob(contents.size() + 300);
-	smart_buffer sb((unsigned char*)blob.data(), blob.size());
-	sb("d");
-	sb("1:m%d:", contents.size())(contents.size(), (byte const*)contents.data());
-	sb("1:n20:")(20, (byte const *)prev_msg_hash.data());
-	sb("e");
+	std::vector<gsl::byte> blob(msg_data.size() + 100);
+	
+	gsl::span<gsl::byte> output = gsl::as_span(blob);
 
-	blob.resize(size_t(sb.length()));
+	// format the dht msg header:
+	dht_msg_header header;
+	std::copy(next_msg_hash.begin(), next_msg_hash.end(), header.next_hash.data());
+	header.msg_length = msg_data.size();
+	header.msg_offset = 0;
+	// serialize the header:
+	output = flatten(blob, gsl::span<dht_msg_header const, 1>(header));
+	// serialize the message:
+	output = flatten(blob, msg_data);
+
+	blob.resize(blob.size() - output.size());
+
 	return blob;
 }
+
 
 list_token list_head::push_front(gsl::span<gsl::byte const> contents)
 {
@@ -160,13 +176,16 @@ list_token list_head::push_front(gsl::span<gsl::byte const> contents)
 	list_token *token = new list_token(m_head);
 
 	// build the dht blob for the offline msg with the current head as the next hash:
-	std::vector<byte> blob = message_dht_blob_write(contents, m_head);
+	std::vector<gsl::byte> blob = message_dht_blob_write(contents, m_head);
+
 	// add the size prefix before hashing the blob
 	// (DhtImpl::ImmutablePut does that before hashing the blob):
 	std::string prefix = std::to_string(blob.size()) + ":";
-	blob.insert(blob.begin(), prefix.begin(), prefix.end());
+	gsl::byte * prefix_b = (gsl::byte *) prefix.c_str();
+	blob.insert(blob.begin(), prefix_b, prefix_b + prefix.size());
+
 	// hash the blob:
-	sha1_hash new_hash = sha1_fun(blob.data(), blob.size());
+	sha1_hash new_hash = sha1_fun((const byte*)blob.data(), blob.size());
 
 	// update the head of the linked list with the new hash:
 	std::memcpy(m_head.data(), new_hash.value, m_head.size());
@@ -178,7 +197,7 @@ list_token list_head::push_front(gsl::span<gsl::byte const> contents)
 void put(IDht& dht, list_token const& token, gsl::span<gsl::byte const> contents, put_finished finished_cb)
 {
 	// build the dht blob for the offline message:
-	std::vector<byte> blob = message_dht_blob_write(contents, token.next());
+	std::vector<gsl::byte> blob = message_dht_blob_write(contents, token.next());
 
 	// allocate a new put_finished callback which we'll pass in as context 
 	// for the C-style put_completed_callback:
@@ -192,7 +211,7 @@ void put(IDht& dht, list_token const& token, gsl::span<gsl::byte const> contents
 	};
 
 	// call immutablePut:
-	dht.ImmutablePut(blob.data(), blob.size(), put_completed_callback, (void*)callback_ctx);
+	dht.ImmutablePut((const byte *)blob.data(), blob.size(), put_completed_callback, (void*)callback_ctx);
 }
 
 } // namespace scout
