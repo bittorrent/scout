@@ -13,6 +13,7 @@ use-project /ut_utils : ut_dht/ut_utils ;
 lib scout
 	: # sources
 	src/scout.cpp
+	src/utils.cpp
 	: # requirements
 	<include>GSL/include
 	<library>/ut_dht//ut_dht/<link>static

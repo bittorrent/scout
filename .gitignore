@@ -1,1 +1,10 @@
 bin
+
+# Visual studio files
+*.sln
+*.opensdf
+*.sdf
+*.suo
+*.vcxproj
+*.filters
+*.user
