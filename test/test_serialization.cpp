@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 
 #include <scout.hpp>
+#include <utils.hpp>
 
 using namespace scout;
 using b = gsl::byte;
@@ -21,8 +22,7 @@ TEST(serialization, entry)
 	auto serialized = gsl::as_span(output_buffer.data(), output_buffer.size() - remaining.size());
 
 	auto expected_span = gsl::as_bytes(gsl::as_span(expected_buffer));
-	EXPECT_TRUE(std::equal(expected_span.begin(), expected_span.end()
-		, serialized.begin(), serialized.end()));
+	EXPECT_TRUE(std::equal(expected_span.begin(), expected_span.end(), serialized.begin()));
 
 	auto parsed = entry::parse(serialized);
 	EXPECT_EQ(e, parsed.first);
@@ -44,8 +44,7 @@ TEST(serialization, list_token)
 	auto remaining = parsed.serialize(output_buffer);
 	auto serialized = gsl::as_span(output_buffer.data(), output_buffer.size() - remaining.size());
 
-	EXPECT_TRUE(std::equal(serialized.begin(), serialized.end()
-		, test_hash_span.begin(), test_hash_span.end()));
+	EXPECT_TRUE(std::equal(serialized.begin(), serialized.end(), test_hash_span.begin()));
 }
 
 TEST(serialization, list_head)
@@ -63,8 +62,7 @@ TEST(serialization, list_head)
 	auto remaining = parsed.serialize(output_buffer);
 	auto serialized = gsl::as_span(output_buffer.data(), output_buffer.size() - remaining.size());
 
-	EXPECT_TRUE(std::equal(serialized.begin(), serialized.end()
-		, test_hash_span.begin(), test_hash_span.end()));
+	EXPECT_TRUE(std::equal(serialized.begin(), serialized.end(), test_hash_span.begin()));
 }
 
 TEST(serialization, entries)
@@ -90,4 +88,28 @@ TEST(serialization, entries)
 
 	EXPECT_EQ(gsl::as_bytes(remaining), parsed);
 	EXPECT_EQ(test_vector, parsed_vector);
+}
+
+TEST(serialization, msg_dht_blob)
+{
+
+	hash const test_hash = { b(0), b(1), b(2), b(3), b(4), b(5), b(6), b(7), b(8), b(9),
+		b(10), b(11), b(12), b(13), b(14), b(15), b(16), b(17), b(18), b(19) };
+
+	chash_span test_hash_span = gsl::as_span(test_hash);
+
+	std::string test_msg = "ta mere suce des schtroumpfs";
+
+	auto test_msg_span = gsl::as_bytes(gsl::as_span(test_msg.c_str(), test_msg.size()));
+
+	// form a dht blob from the message and hash:
+	auto dht_blob = message_dht_blob_write(test_msg_span, test_hash_span);
+
+	// parse the blob and extract the hash and message:
+	hash parsed_hash;
+	auto parsed_msg = message_dht_blob_read(dht_blob, gsl::as_span(parsed_hash));
+	// check that the parsed hash matches:
+	EXPECT_EQ(test_hash, parsed_hash);
+	// check that the parsed message matches:
+	EXPECT_TRUE(std::equal(test_msg_span.begin(), test_msg_span.end(), parsed_msg.begin()));
 }

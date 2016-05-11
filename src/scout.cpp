@@ -1,65 +1,10 @@
-#include "scout.hpp"
-#include <boost/endian/arithmetic.hpp>
-#include <memory>
-#include <cassert>
-#include "DhtImpl.h"
 #include "utils.hpp"
+#include "scout.hpp"
+#include "DhtImpl.h"
 
-namespace be = boost::endian;
 
 namespace scout
 {
-
-namespace
-{
-	template <typename T, std::ptrdiff_t... Dimensions>
-	gsl::span<gsl::byte const> extract(gsl::span<T, Dimensions...> dest, gsl::span<gsl::byte const> src)
-	{
-		static_assert(std::is_trivial<std::decay_t<T>>::value, "Target type must be a trivial type");
-
-		if (src.size_bytes() < dest.size_bytes())
-			throw std::length_error("bytes span smaller than destination");
-		std::memcpy(dest.data(), src.data(), dest.size_bytes());
-		return { src.data() + dest.size_bytes(), src.size_bytes() - dest.size_bytes() };
-	}
-
-	template <typename T, std::ptrdiff_t... Dimensions>
-	gsl::span<gsl::byte> flatten(gsl::span<gsl::byte> dest, gsl::span<T const, Dimensions...> src)
-	{
-		static_assert(std::is_trivial<std::decay_t<T>>::value, "Target type must be a trivial type");
-
-		if (dest.size_bytes() < src.size_bytes())
-			throw std::length_error("source span larger than destination");
-		std::memcpy(dest.data(), src.data(), src.size_bytes());
-		return { dest.data() + src.size_bytes(), dest.size_bytes() - src.size_bytes() };
-	}
-
-	struct entry_header
-	{
-		be::big_int64_t seq;
-		be::big_uint32_t id;
-		std::array<gsl::byte, 2> reserved;
-		uint8_t content_length;
-		// offset from this field to the first byte of content
-		// This is for extensibility. If we want to add more header fields
-		// later on we can increase the offset and old clients will apply
-		// the offset and skip the part of the header they don't understand.
-		uint8_t content_offset;
-	};
-
-	struct entries_header
-	{
-		uint8_t entry_count;
-		uint8_t entries_offset; // offset from this field to the first entry
-	};
-
-	struct dht_msg_header
-	{
-		hash next_hash;
-		be::big_uint16_t msg_length;
-		uint8_t msg_offset;
-	};
-}
 
 // do any global initialization for the scout library here:
 void init(IDht &dht)
@@ -147,26 +92,6 @@ gsl::span<gsl::byte const> parse(gsl::span<gsl::byte const> input, std::vector<e
 	return input;
 }
 
-// format the dht blob for a message in the linked list (message data and hash of the next message):
-std::vector<gsl::byte> message_dht_blob_write(gsl::span<gsl::byte const> msg_data, chash_span next_msg_hash)
-{
-	std::vector<gsl::byte> blob(msg_data.size() + sizeof(dht_msg_header));
-	
-	gsl::span<gsl::byte> output = gsl::as_span(blob);
-
-	// format the dht msg header:
-	dht_msg_header header;
-	std::copy(next_msg_hash.begin(), next_msg_hash.end(), header.next_hash.data());
-	header.msg_length = msg_data.size();
-	header.msg_offset = 0;
-	// serialize the header:
-	output = flatten(blob, gsl::span<dht_msg_header const, 1>(header));
-	// serialize the message:
-	output = flatten(blob, msg_data);
-
-	return blob;
-}
-
 
 list_token list_head::push_front(gsl::span<gsl::byte const> contents)
 {
@@ -210,6 +135,30 @@ void put(IDht& dht, list_token const& token, gsl::span<gsl::byte const> contents
 
 	// call immutablePut:
 	dht.ImmutablePut((const byte *)blob.data(), blob.size(), put_completed_callback, (void*)callback_ctx);
+}
+
+void get(IDht& dht, hash_span address, item_received received_cb)
+{
+	// allocate a new put_finished callback which we'll pass in as context 
+	// for the C-style put_completed_callback:
+	item_received *callback_ctx = new item_received(std::move(received_cb));
+
+	// define a lambda function for handling the get callback:
+	auto get_callback = [](void *ctx, std::vector<char> const& buffer) {
+		hash next_hash;
+		// create a span of gsl::byte from the dht buffer:
+		gsl::span<gsl::byte const> buffer_span = gsl::as_bytes(gsl::as_span(buffer.data(), buffer.size()));
+		// extract the message contents and the next hash from the DHT blob:
+		auto msg_contents = message_dht_blob_read(buffer_span, next_hash);
+		// cast the context pointer to an item_received callback and call it:
+		item_received callback = *((item_received *)ctx);
+		callback(std::move(msg_contents), next_hash);
+		delete &callback;
+	};
+
+	sha1_hash target_hash((const byte *)address.data());
+
+	dht.ImmutableGet(target_hash, get_callback, (void*)callback_ctx);
 }
 
 } // namespace scout
