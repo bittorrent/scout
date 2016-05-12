@@ -43,6 +43,7 @@ lib test_lib
 	<include>../GSL/include
 	<include>../src
 	<include>/opt/local/include
+	<include>$(BOOST_ROOT)
 
 	;
 
