@@ -135,7 +135,7 @@ using sync_finished = std::function<void()>;
 // called when the value associated with the hash has been received
 // the DHT transaction ends after this function is called
 // if no value is found an empty span will be passed
-using item_received = std::function<void(std::vector<gsl::byte> contents, hash_span next_hash)>;
+using item_received = std::function<void(std::vector<gsl::byte> contents, hash const& next_hash)>;
 // called when a put has completed
 using put_finished = std::function<void()>;
 

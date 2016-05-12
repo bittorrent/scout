@@ -107,7 +107,7 @@ TEST(serialization, msg_dht_blob)
 
 	// parse the blob and extract the hash and message:
 	hash parsed_hash;
-	auto parsed_msg = message_dht_blob_read(dht_blob, gsl::as_span(parsed_hash));
+	auto parsed_msg = message_dht_blob_read(dht_blob, parsed_hash);
 	// check that the parsed hash matches:
 	EXPECT_EQ(test_hash, parsed_hash);
 	// check that the parsed message matches:

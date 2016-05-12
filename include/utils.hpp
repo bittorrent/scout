@@ -56,9 +56,9 @@ gsl::span<gsl::byte> flatten(gsl::span<gsl::byte> dest, gsl::span<T const, Dimen
 		throw std::length_error("source span larger than destination");
 	std::memcpy(dest.data(), src.data(), src.size_bytes());
 	return{ dest.data() + src.size_bytes(), dest.size_bytes() - src.size_bytes() };
-	}
+}
 
 std::vector<gsl::byte> message_dht_blob_write(gsl::span<gsl::byte const> msg_data, chash_span next_msg_hash);
-std::vector<gsl::byte> message_dht_blob_read(gsl::span<gsl::byte const> dht_blob, hash_span next_msg_hash);
+std::vector<gsl::byte> message_dht_blob_read(gsl::span<gsl::byte const> dht_blob, hash& next_msg_hash);
 
 #endif

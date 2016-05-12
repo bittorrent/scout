@@ -48,7 +48,7 @@ std::vector<gsl::byte> message_dht_blob_write(gsl::span<gsl::byte const> msg_dat
 
 // this function takes in the dht buffer, parses it and returns a vector representing the message contents
 // and a hash pointing to the next message in the linked list:
-std::vector<gsl::byte> message_dht_blob_read(gsl::span<gsl::byte const> dht_blob, hash_span next_msg_hash)
+std::vector<gsl::byte> message_dht_blob_read(gsl::span<gsl::byte const> dht_blob, hash& next_msg_hash)
 {
 	// if the buffer is empty, return an empty vector:
 	if (dht_blob.size() == 0)
@@ -66,7 +66,7 @@ std::vector<gsl::byte> message_dht_blob_read(gsl::span<gsl::byte const> dht_blob
 	// prepare a vector to receive the message contents:
 	std::vector<gsl::byte> msg_contents(header.msg_length);
 	// apply the offset (if any) and extract the actual message contents:
-	dht_blob = extract(gsl::as_span(msg_contents), dht_blob.subspan(header.msg_offset, header.msg_offset + header.msg_length));
+	dht_blob = extract(gsl::as_span(msg_contents), dht_blob.subspan(header.msg_offset, header.msg_length));
 
 	return msg_contents;
 }
