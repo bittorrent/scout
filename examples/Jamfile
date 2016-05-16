@@ -1,0 +1,13 @@
+import modules ;
+
+use-project /scout : .. ;
+
+project client_test
+	: requirements
+	<threading>multi
+	<library>/scout//scout
+	: default-build
+	<link>static
+	;
+
+exe client_test : client_test.cpp ;

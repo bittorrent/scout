@@ -70,3 +70,19 @@ std::vector<gsl::byte> message_dht_blob_read(gsl::span<gsl::byte const> dht_blob
 
 	return msg_contents;
 }
+
+void log_debug(char const* fmt, ...)
+{
+	va_list vl;
+	va_start(vl, fmt);
+	fprintf(stderr, fmt, vl);
+	va_end(vl);
+}
+
+void log_error(char const* fmt, ...)
+{
+	va_list vl;
+	va_start(vl, fmt);
+	fprintf(stderr, fmt, vl);
+	va_end(vl);
+}

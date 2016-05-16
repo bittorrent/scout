@@ -61,4 +61,7 @@ gsl::span<gsl::byte> flatten(gsl::span<gsl::byte> dest, gsl::span<T const, Dimen
 std::vector<gsl::byte> message_dht_blob_write(gsl::span<gsl::byte const> msg_data, chash_span next_msg_hash);
 std::vector<gsl::byte> message_dht_blob_read(gsl::span<gsl::byte const> dht_blob, hash& next_msg_hash);
 
+void log_debug(char const* fmt, ...);
+void log_error(char const* fmt, ...);
+
 #endif
