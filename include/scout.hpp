@@ -29,6 +29,7 @@ public:
 	gsl::span<gsl::byte> serialize(gsl::span<gsl::byte> output) const;
 
 	uint32_t id() const { return m_id; }
+	int64_t seq() const { return m_seq; }
 	std::vector<gsl::byte> const& value() const { return m_contents; }
 	void assign(gsl::span<gsl::byte const> contents)
 	{
@@ -51,13 +52,21 @@ public:
 			&& m_contents == o.m_contents;
 	}
 
+	entry& operator=(entry o)
+	{
+		m_id = o.m_id;
+		m_seq = o.m_seq;
+		m_contents = o.m_contents;
+		return *this;
+	}
+
 private:
 	entry(int64_t seq, uint32_t id, std::vector<gsl::byte> content)
 		: m_contents(std::move(content)), m_seq(seq), m_id(id) {}
 
 	std::vector<gsl::byte> m_contents;
 	int64_t m_seq;
-	uint32_t const m_id;
+	uint32_t m_id;
 };
 
 // a token is associated with each piece of immutable data stored in a list
@@ -127,7 +136,7 @@ gsl::span<gsl::byte> serialize(gsl::span<entry const> entries, gsl::span<gsl::by
 gsl::span<gsl::byte const> parse(gsl::span<gsl::byte const> input, std::vector<entry>& entries);
 
 // called when a new or updated entry is received from the DHT
-using entry_updated = std::function<void(std::vector<entry>::iterator e)>;
+using entry_updated = std::function<void(entry const& e)>;
 // called just before the list of entries is stored in the DHT
 using finalize_entries = std::function<void(std::vector<entry>& entries)>;
 // called when storing the current entry list has completed
