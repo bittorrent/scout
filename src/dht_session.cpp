@@ -151,6 +151,32 @@ int dht_session::start()
 	return promise.get_future().get();
 }
 
+void dht_session::synchronize(secret_key_span shared_key, std::vector<entry>& entries
+	, entry_updated entry_cb, finalize_entries finalize_cb, sync_finished finished_cb)
+{
+	m_ios.post([=,&entries]()
+	{
+		::synchronize(*m_dht, shared_key, entries, entry_cb, finalize_cb, finished_cb);
+	});
+}
+
+void dht_session::put(list_token const& token, gsl::span<gsl::byte const> contents
+	, put_finished finished_cb)
+{
+	m_ios.post([=]()
+	{
+		::put(*m_dht, token, contents, finished_cb);
+	});
+}
+
+void dht_session::get(hash_span address, item_received received_cb)
+{
+	m_ios.post([=]()
+	{
+		::get(*m_dht, address, received_cb);
+	});
+}
+
 void dht_session::resolve_bootstrap_servers()
 {
 	// add router node to DHT, used for bootstrapping if no other nodes are known
