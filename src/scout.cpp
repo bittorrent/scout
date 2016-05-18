@@ -1,10 +1,39 @@
 #include "utils.hpp"
 #include "scout.hpp"
 #include "DhtImpl.h"
+#include <sodium/crypto_sign.h>
 
 
 namespace scout
 {
+
+namespace
+{
+	// context for the DHT put callbacks: 
+	struct dht_put_context {
+
+		entry_updated entry_cb;
+		finalize_entries finalize_cb;
+		sync_finished finished_cb;
+		secret_key secret;
+		std::map<uint32_t, entry> entries_map;
+
+		dht_put_context(std::vector<entry> const& entries
+			, secret_key_span key
+			, entry_updated e_cb
+			, finalize_entries f_cb
+			, sync_finished s_cb)
+			: entry_cb(std::move(e_cb))
+			, finalize_cb(std::move(f_cb))
+			, finished_cb(std::move(s_cb))
+		{
+			std::copy(key.begin(), key.end(), secret.data());
+			// build a map of entries, indexed by id, based on the vector of entries:
+			for (entry const& e : entries)
+				entries_map.emplace(e.id(), e);
+		}
+	};
+}
 
 // do any global initialization for the scout library here:
 void init(IDht &dht)
@@ -159,6 +188,117 @@ void get(IDht& dht, hash_span address, item_received received_cb)
 	sha1_hash target_hash((const byte *)address.data());
 
 	dht.ImmutableGet(target_hash, get_callback, (void*)callback_ctx);
+}
+
+int put_callback(void* ctx, std::vector<char>& buffer, int64& seq, SockAddr src)
+{
+	dht_put_context* context = static_cast<dht_put_context*>(ctx);
+
+	if (!context) {
+		// TODO: log an error
+		buffer.assign({ '0', ':' });
+		return 1;
+	}
+
+	std::vector<entry> entries;
+	// populate the vector with entries we saved in the context's map:
+	for (auto &map_entry : context->entries_map)
+		entries.push_back(map_entry.second);
+
+	// call the finalize callback to let the client perform
+	// a final update on the vector of entries:
+	context->finalize_cb(entries);
+
+	// serialize the entries:
+	// TODO: size this vector appropriately
+	std::vector<char> final_buffer(1000);
+	serialize(entries, gsl::as_writeable_bytes(gsl::as_span(final_buffer)));
+
+	// encrypt the buffer:
+	buffer = encrypt_buffer(final_buffer, context->secret);
+	// add the length prefix:
+	std::string prefix = std::to_string(buffer.size()) + ":";
+	buffer.insert(buffer.begin(), prefix.begin(), prefix.end());
+	return 0;
+}
+
+int put_data_callback(void* ctx, std::vector<char> const& buffer, int64 seq, SockAddr src)
+{
+	dht_put_context* context = static_cast<dht_put_context*>(ctx);
+
+	if (!context) {
+		// TODO: log an error
+		return 1;
+	}
+
+	// skip the length prefix
+	int skip = 0;
+	while (skip < int(buffer.size())) {
+		++skip;
+		if (buffer[skip - 1] == ':') break;
+	}
+	std::vector<char> buffer2(buffer.begin() + skip, buffer.end());
+
+	// decrypt the buffer:
+	std::vector<char> plaintext = decrypt_buffer(buffer2, context->secret);
+
+	if (plaintext.empty() && !buffer2.empty()) {
+		// TODO: log an error
+		return 0;
+	}
+
+	// parse the blob into a vector of entries:
+	std::vector<entry> blob_entries;
+	parse(gsl::as_bytes(gsl::as_span(plaintext)), blob_entries);
+	
+	auto &e_map = context->entries_map;
+	// check if there are new entries or if the seq number has changed:
+	for (entry &e : blob_entries) 
+	{
+		// try inserting the current entry in the map:
+		auto ret = e_map.insert(std::pair<uint32_t, entry>(e.id(), e));
+
+		if (ret.second == true)
+		{	// the element was inserted (it wasn't in the map before).
+			// call the entry_updated callback to notify the client of the new entry:
+			context->entry_cb(e);
+		}
+		else if (e.seq() > ret.first->second.seq())
+		{	// this entry already exists in the map, but its sequence number is higher.
+			// notify the client of the updated entry:
+			context->entry_cb(e);
+			// and update the existing entry in the map:
+			ret.first->second.update_seq(e.seq());
+			ret.first->second.update_contents(e.value());
+		}
+	}
+
+	return 0;
+}
+
+void synchronize(IDht& dht, secret_key_span shared_key, std::vector<entry>& entries
+	, entry_updated entry_cb, finalize_entries finalize_cb, sync_finished finished_cb)
+{
+	std::array<unsigned char, crypto_sign_PUBLICKEYBYTES> target_public;
+	std::array<unsigned char, crypto_sign_SECRETKEYBYTES> target_private;
+	// generate a key pair from the shared secret which will be used
+	// as the target keypair for the DHT put call:
+	crypto_sign_seed_keypair(target_public.data(), target_private.data(), (const unsigned char*) shared_key.data());
+
+	// store context info for the callbacks:
+	dht_put_context *put_context = new dht_put_context(entries, shared_key, entry_cb, finalize_cb, finished_cb);	
+
+	// create a lambda function for the final callback:
+	auto put_completed_callback = [](void *ctx) {
+		// extract the dht put context:
+		dht_put_context *context = (dht_put_context *)ctx;
+		// call the finished callback:
+		context->finished_cb();
+		delete context;
+	};
+
+	// DHT mutable put call:
+	dht.Put(target_public.data(), target_private.data(), put_callback, put_completed_callback, put_data_callback, put_context);
 }
 
 } // namespace scout

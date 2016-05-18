@@ -8,3 +8,4 @@ bin
 *.vcxproj
 *.filters
 *.user
+scout.VC.*

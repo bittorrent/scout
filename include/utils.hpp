@@ -4,6 +4,9 @@
 #include <scout.hpp>
 #include <sha1_hash.h>
 #include <boost/endian/arithmetic.hpp>
+#include <sodium/crypto_box.h>
+#include <sodium/randombytes.h>
+#include <cstring>
 
 namespace be = boost::endian;
 using namespace scout;
@@ -63,5 +66,9 @@ std::vector<gsl::byte> message_dht_blob_read(gsl::span<gsl::byte const> dht_blob
 
 void log_debug(char const* fmt, ...);
 void log_error(char const* fmt, ...);
+
+// crypto helper functions:
+std::vector<char> decrypt_buffer(std::vector<char> buffer, secret_key_span secret);
+std::vector<char> encrypt_buffer(std::vector<char> buffer, secret_key_span secret, const unsigned char* nonce_in = nullptr);
 
 #endif

@@ -3,6 +3,9 @@
 #include <vector>
 #include <memory>
 #include <cassert>
+#include <sodium/crypto_secretbox.h>
+#include <sodium/randombytes.h>
+
 using namespace boost::uuids::detail;
 
 #ifdef _WIN32
@@ -85,4 +88,81 @@ void log_error(char const* fmt, ...)
 	va_start(vl, fmt);
 	fprintf(stderr, fmt, vl);
 	va_end(vl);
+}
+
+std::vector<char> decrypt_buffer(std::vector<char> buffer, secret_key_span sk)
+{
+	std::vector<char> plaintext;
+
+	if (buffer.size() <= crypto_secretbox_NONCEBYTES + crypto_secretbox_BOXZEROBYTES)
+		return plaintext;
+
+	// pull out the nonce bytes from the start of the buffer
+	unsigned char nonce[crypto_secretbox_NONCEBYTES];
+	std::memcpy(nonce, &buffer[0], crypto_secretbox_NONCEBYTES);
+	buffer.erase(buffer.begin(), buffer.begin() + crypto_secretbox_NONCEBYTES);
+
+	// prepend the zero-padding space needed by
+	// crypto_box_open()
+	buffer.resize(buffer.size() + crypto_secretbox_BOXZEROBYTES);
+	std::memmove(&buffer[crypto_secretbox_BOXZEROBYTES], &buffer[0]
+		, buffer.size() - crypto_secretbox_BOXZEROBYTES);
+	std::memset(&buffer[0], 0, crypto_secretbox_BOXZEROBYTES);
+	plaintext.resize(buffer.size());
+
+	// crypto_secretbox_open(m,c,mlen,n,sk);
+	// m: plain text message [out]
+	// c: cipher text [in]
+	// mlen: length of message [in]
+	// n: nonce bytes [in]
+	// sk: secret key [in]
+	int ret = crypto_secretbox_open((unsigned char*)&plaintext[0]
+		, (unsigned char*)&buffer[0]
+		, buffer.size()
+		, nonce
+		, (const unsigned char*) sk.data());
+
+	if (ret != 0) {
+		plaintext.clear();
+		return plaintext;
+	}
+
+	// now, strip the leading zeroes
+	plaintext.erase(plaintext.begin(), plaintext.begin() + crypto_secretbox_ZEROBYTES);
+	return plaintext;
+}
+
+std::vector<char> encrypt_buffer(std::vector<char> buffer, secret_key_span sk, const unsigned char* nonce_in)
+{
+	// first, generate a nonce
+	unsigned char nonce[crypto_secretbox_NONCEBYTES];
+	if (nonce_in) {
+		std::copy(nonce_in, nonce_in + crypto_secretbox_NONCEBYTES, nonce);
+	}
+	else {
+		randombytes(nonce, crypto_secretbox_NONCEBYTES);
+	}
+
+	// then prepend the zero padding
+	buffer.resize(buffer.size() + crypto_secretbox_ZEROBYTES);
+	std::memmove(&buffer[crypto_secretbox_ZEROBYTES], &buffer[0]
+		, buffer.size() - crypto_secretbox_ZEROBYTES);
+	std::memset(&buffer[0], 0, crypto_secretbox_ZEROBYTES);
+
+	std::vector<char> ciphertext;
+	ciphertext.resize(buffer.size());
+
+	crypto_secretbox((unsigned char*)&ciphertext[0] // destination buffer
+		, (const unsigned char*)&buffer[0] // source plaintext buffer
+		, buffer.size()
+		, nonce // nonce bytes
+		, (const unsigned char*)sk.data());
+
+	// strip the remaining zero-padding
+	ciphertext.erase(ciphertext.begin(), ciphertext.begin()
+		+ crypto_secretbox_BOXZEROBYTES);
+
+	// prepend the nonce
+	ciphertext.insert(ciphertext.begin(), nonce, nonce + crypto_secretbox_NONCEBYTES);
+	return ciphertext;
 }
