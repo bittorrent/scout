@@ -201,7 +201,12 @@ int put_callback(void* ctx, std::vector<char>& buffer, int64& seq, SockAddr src)
 	}
 
 	std::vector<entry> entries;
-	// call the finalize callback to retrieve the final vector of entries from the client:
+	// populate the vector with entries we saved in the context's map:
+	for (auto &map_entry : context->entries_map)
+		entries.push_back(map_entry.second);
+
+	// call the finalize callback to let the client perform
+	// a final update on the vector of entries:
 	context->finalize_cb(entries);
 
 	// serialize the entries:
@@ -250,12 +255,22 @@ int put_data_callback(void* ctx, std::vector<char> const& buffer, int64 seq, Soc
 	// check if there are new entries or if the seq number has changed:
 	for (entry &e : blob_entries) 
 	{
-		// look for this entry's id in the map:
-		auto map_it = e_map.find(e.id());
-		// call the entry_updated callback if this is a new entry
-		// or if its sequence number is higher:
-		if (map_it == e_map.end() || e.seq() > map_it->second.seq() )
+		// try inserting the current entry in the map:
+		auto ret = e_map.insert(std::pair<uint32_t, entry>(e.id(), e));
+
+		if (ret.second == true)
+		{	// the element was inserted (it wasn't in the map before).
+			// call the entry_updated callback to notify the client of the new entry:
 			context->entry_cb(e);
+		}
+		else if (e.seq() > ret.first->second.seq())
+		{	// this entry already exists in the map, but its sequence number is higher.
+			// notify the client of the updated entry:
+			context->entry_cb(e);
+			// and update the existing entry in the map:
+			ret.first->second.update_seq(e.seq());
+			ret.first->second.update_contents(e.value());
+		}
 	}
 
 	return 0;

@@ -29,7 +29,6 @@ public:
 	gsl::span<gsl::byte> serialize(gsl::span<gsl::byte> output) const;
 
 	uint32_t id() const { return m_id; }
-	int64_t seq() const { return m_seq; }
 	std::vector<gsl::byte> const& value() const { return m_contents; }
 	void assign(gsl::span<gsl::byte const> contents)
 	{
@@ -59,6 +58,11 @@ public:
 		m_contents = o.m_contents;
 		return *this;
 	}
+
+	// for internal use:
+	int64_t seq() const { return m_seq; }
+	void update_seq(int64_t seq) { m_seq = seq; }
+	void update_contents(std::vector<gsl::byte> contents) { m_contents = contents; }
 
 private:
 	entry(int64_t seq, uint32_t id, std::vector<gsl::byte> content)
