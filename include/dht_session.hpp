@@ -8,6 +8,7 @@
 #include <dht.h>
 #include <ExternalIPCounter.h>
 #include "udp_socket.hpp"
+#include "scout.hpp"
 
 namespace scout
 {
@@ -19,6 +20,19 @@ public:
 	~dht_session();
 
 	int start();
+
+	// synchronize a list of entries with the DHT
+	// this will first update the given vector with any new or updated entries from the DHT
+	// then store the updated list in the DHT
+	void synchronize(secret_key_span shared_key, std::vector<entry>& entries
+		, entry_updated entry_cb, finalize_entries finalize_cb, sync_finished finished_cb);
+
+	// store an immutable item in the DHT
+	void put(list_token const& token, gsl::span<gsl::byte const> contents
+		, put_finished finished_cb);
+
+	// retrieve an immutable item from the DHT
+	void get(hash_span address, item_received received_cb);
 
 private:
 	bool is_quitting() const { return false; }
