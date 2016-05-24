@@ -2,7 +2,7 @@
 #include "scout.hpp"
 #include "DhtImpl.h"
 #include <sodium/crypto_sign.h>
-
+#include <sodium/crypto_scalarmult.h>
 
 namespace scout
 {
@@ -91,6 +91,24 @@ list_head list_head::parse(gsl::span<gsl::byte const> input)
 	hash h;
 	input = extract(gsl::as_span(h), input);
 	return{ h };
+}
+
+std::pair<secret_key, public_key> generate_keypair()
+{
+	secret_key sk;
+	public_key pk;
+	crypto_box_keypair((unsigned char*)pk.data()
+		, (unsigned char*)sk.data());
+	return{ sk, pk };
+}
+
+secret_key key_exchange(csecret_key_span sk, cpublic_key_span pk)
+{
+	secret_key ret;
+	crypto_scalarmult((unsigned char*)ret.data()
+		, (unsigned char const*)sk.data()
+		, (unsigned char const*)pk.data());
+	return ret;
 }
 
 gsl::span<gsl::byte> serialize(gsl::span<entry const> entries, gsl::span<gsl::byte> output)
