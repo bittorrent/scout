@@ -1,0 +1,20 @@
+
+lib natpmpc
+	: # sources
+	getgateway.c
+	natpmp.c
+	: # requirements
+	<include>.
+	<target-os>windows:<source>wingettimeofday.c
+	<define>ENABLE_STRNATPMPERR
+	<target-os>windows:<define>WIN32
+	<target-os>windows:<define>STATICLIB
+	: # default build
+	<link>static
+	: # usage requirements
+	<include>.
+	<define>ENABLE_STRNATPMPERR
+	<target-os>windows:<define>STATICLIB
+	;
+
+
