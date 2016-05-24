@@ -385,7 +385,15 @@ void dht_session::incoming_packet(char* buf, size_t len, udp::endpoint const& ep
 	// don't tempt it to do things
 	if (m_dht->IsEnabled()) {
 		udp_socket_adaptor adaptor(m_socket.get());
-		m_dht->handleReadEvent(&adaptor, (byte*)buf, len, src);
+		if (m_dht->handleReadEvent(&adaptor, (byte*)buf, len, src))
+		{
+#if g_log_dht
+			error_code ec;
+			log_debug("DHT: <== [%s:%d]: %s"
+				, ep.address().to_string(ec).c_str(), ep.port()
+				, filter((unsigned char const*)buf, len).c_str());
+#endif
+		}
 	}
 }
 catch (boost::system::system_error& e)
