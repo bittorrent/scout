@@ -14,6 +14,9 @@ namespace scout
 using secret_key = std::array<gsl::byte, 32>;
 using secret_key_span = gsl::span<gsl::byte, 32>;
 using csecret_key_span = gsl::span<gsl::byte const, 32>;
+using public_key = std::array<gsl::byte, 32>;
+using public_key_span = gsl::span<gsl::byte, 32>;
+using cpublic_key_span = gsl::span<gsl::byte const, 32>;
 using hash = std::array<gsl::byte, 20>;
 using hash_span = gsl::span<gsl::byte, 20>;
 using chash_span = gsl::span<gsl::byte const, 20>;
@@ -129,6 +132,11 @@ private:
 
 	hash m_head;
 };
+
+std::pair<secret_key, public_key> generate_keypair();
+
+// do an ECDH key exchange
+secret_key key_exchange(csecret_key_span sk, cpublic_key_span pk);
 
 // takes a span of entries and write them out to a buffer
 // returns a new span pointing to to one past the last byte used to store
