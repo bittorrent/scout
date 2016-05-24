@@ -73,6 +73,7 @@ local usage-requirements =
 lib scout
 	: # sources
 	src/dht_session.cpp
+	src/file.cpp
 	src/scout.cpp
 	src/sockaddr.cpp
 	src/utils.cpp
