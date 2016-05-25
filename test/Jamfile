@@ -56,6 +56,7 @@ project
 
 test-suite communicator-tests :
 	[ run test_serialization.cpp ]
+	[ run test_scout_api.cpp ]
 	;
 	
 # build-project ../ut_dht/unittests ;
