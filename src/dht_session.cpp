@@ -5,9 +5,38 @@
 #include <udp_utils.h>
 #include "sockaddr.hpp"
 #include "bencoding.h"
+#include "file.hpp"
+
 
 namespace
 {
+	using boost::system::system_category;
+
+	template <class F>
+	struct scope_guard
+	{
+		scope_guard(F const& f) : m_f(f), m_valid(true) {}
+
+		scope_guard(scope_guard const & sg) = delete;
+		scope_guard& operator=(scope_guard const& sg) = delete;
+
+		scope_guard(scope_guard&& sg)
+			: m_f(std::move(sg.m_f))
+			, m_valid(true) {
+			sg.m_valid = false;
+		}
+
+		void disarm() { m_valid = false; }
+
+		~scope_guard() { if (m_valid) m_f(); }
+		F m_f;
+		bool m_valid;
+
+	};
+
+	template <class F>
+	scope_guard<F> make_guard(F f) { return scope_guard<F>(f); }
+
 #if g_log_dht
 	std::string filter(unsigned char const* p, int len)
 	{
@@ -65,11 +94,10 @@ namespace
 		bool m_enabled;
 	};
 
-	void save_dht_state(const byte* buf, int len)
+	void save_dht_state(const byte* buf, int len) try
 	{
-#if 0
 		file f;
-		std::string dht_file = get_dht_state_file();
+		std::string dht_file = "dht.dat";
 		f.open(dht_file.c_str(), file::create | file::read_write);
 
 		size_t written = f.write((char const*)buf, len);
@@ -88,18 +116,77 @@ namespace
 	catch (std::exception& e) {
 		log_error("failed to save DHT state to disk: %s"
 			, e.what());
-#endif
+	}
+
+	void bdecode_buffer_with_hash(BencodedDict& dict, char const* buffer, int size)
+	{
+		unsigned char const* pos = BencEntity::Parse((unsigned char *)buffer, dict
+			, (unsigned char*)buffer + size);
+
+		if (pos < (unsigned char*)buffer) {
+			throw std::runtime_error("failed to parse bencoding");
+		}
+
+		// if there are 24 bytes remaining at the end of the file,
+		// consider it a hash and verify it
+		size -= (pos - (unsigned char*)buffer);
+		if (size >= 24
+			&& memcmp(pos + 20, "hash", 4) == 0) {
+
+			// there is a hash at the end of the file
+			// verify it
+			sha1_hash hash = sha1_fun((byte const*)buffer, pos - (unsigned char*)buffer);
+
+			if (memcmp(&hash.value, pos, 20) != 0) {
+				throw std::runtime_error("invalid check-sum");
+			}
+		}
+	}
+
+	// read and parse a bencoded dictionary from a given file:
+	void read_bencoded_file(BencodedDict& dict, file& f)
+	{
+		int size = int(f.size());
+
+		// It's possible that we were asked to read an empty file!
+		if (size == 0) {
+			throw std::runtime_error("empty file");
+		}
+
+		std::vector<char> buffer(size);
+
+		auto g = make_guard([&] {
+			// clear the memory before freeing
+			memset(&buffer[0], 0, buffer.size());
+		});
+
+		int ret = f.read(&buffer[0], size); // read the file
+
+		assert(ret == size);
+		if (ret != size) {
+			throw std::runtime_error("failed to read entire file");
+		}
+
+		bdecode_buffer_with_hash(dict, &buffer[0], buffer.size());
+	}
+
+	// This version of read_bencoded_file is provided for classes other
+	// than settings_file to read bencoded files from a BencodedDict
+	// This version DOES close the file after it is done
+	void read_bencoded_file(BencodedDict& dict, char const* filename)
+	{
+		// First, try to open filename as an empty file
+		file f(filename, file::read_only);
+		read_bencoded_file(dict, f);
 	}
 
 	// asks the client to load the DHT state into ent
-	void load_dht_state(BencEntity* ent)
+	void load_dht_state(BencEntity* ent) try
 	{
-#if 0
-		read_bencoded_file(*static_cast<BencodedDict *>(ent), get_dht_state_file().c_str());
+		read_bencoded_file(*static_cast<BencodedDict *>(ent), "dht.dat");
 	}
 	catch (std::exception& e) {
 		log_error("failed to load DHT state: %s", e.what());
-#endif
 	}
 
 	bool ed25519_verify(const unsigned char *signature,
