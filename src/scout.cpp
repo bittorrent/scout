@@ -177,14 +177,14 @@ void put(IDht& dht, list_token const& token, gsl::span<gsl::byte const> contents
 		// cast the context pointer to a put_finished callback and call it:
 		put_finished callback = *((put_finished *)ctx);
 		callback();
-		delete &callback;
+		delete (put_finished *)ctx;
 	};
 
 	// call immutablePut:
 	dht.ImmutablePut((const byte *)blob.data(), blob.size(), put_completed_callback, (void*)callback_ctx);
 }
 
-void get(IDht& dht, hash_span address, item_received received_cb)
+void get(IDht& dht, chash_span address, item_received received_cb)
 {
 	// allocate a new put_finished callback which we'll pass in as context 
 	// for the C-style put_completed_callback:
@@ -200,7 +200,7 @@ void get(IDht& dht, hash_span address, item_received received_cb)
 		// cast the context pointer to an item_received callback and call it:
 		item_received callback = *((item_received *)ctx);
 		callback(std::move(msg_contents), next_hash);
-		delete &callback;
+		delete (item_received *)ctx;
 	};
 
 	sha1_hash target_hash((const byte *)address.data());
