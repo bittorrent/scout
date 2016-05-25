@@ -171,7 +171,7 @@ void put(IDht& dht, list_token const& token, gsl::span<gsl::byte const> contents
 	, put_finished finished_cb);
 
 // retrieve an immutable item from the DHT
-void get(IDht& dht, hash_span address, item_received received_cb);
+void get(IDht& dht, chash_span address, item_received received_cb);
 
 void init(IDht& dht);
 }
