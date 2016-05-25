@@ -70,4 +70,6 @@ TEST(scout_api, get)
 
 	hash target_hash;
 	get(fake_dht, target_hash, received_cb);
+	// check that ImmutableGet was called:
+	EXPECT_TRUE(fake_dht.immutableGetCalled);
 }

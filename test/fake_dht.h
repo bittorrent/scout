@@ -23,6 +23,7 @@ public:
 	}
 
 	std::vector<char> immutableData;
+	bool immutableGetCalled = false;
 
 	virtual sha1_hash ImmutablePut(const byte * data, size_t data_len,
 		DhtPutCompletedCallback* put_completed_callback = nullptr, void *ctx = nullptr)
@@ -36,6 +37,7 @@ public:
 
 	virtual void ImmutableGet(sha1_hash target, DhtGetCallback* cb, void* ctx = nullptr)
 	{
+		immutableGetCalled = true;
 		// return the data blob:
 		cb(ctx, immutableData);
 	}
