@@ -21,7 +21,10 @@ TEST(scout_api, put)
 	// add a message to the list:
 	list_token msg_token = msg_list.push_front(test_msg_span);
 
+	bool finished_cb_called = false;
+
 	put_finished finished_cb = [&] {
+		finished_cb_called = true;
 		// check the blob that's been written to the DHT:
 		auto dht_blob_span = gsl::as_bytes(gsl::as_span(fake_dht.immutableData));
 		hash parsed_hash;
@@ -37,6 +40,8 @@ TEST(scout_api, put)
 
 	// check that ImmutablePut got called:
 	EXPECT_TRUE(fake_dht.immutableData.size() > 0);
+	// check that the finished callback got called:
+	EXPECT_TRUE(finished_cb_called);
 }
 
 TEST(scout_api, get)
@@ -61,7 +66,10 @@ TEST(scout_api, get)
 	// add a message to the list:
 	list_token msg_token = msg_list.push_front(test_msg_span);
 
+	bool received_cb_called = false;
+
 	item_received received_cb = [&](std::vector<gsl::byte> contents, hash const& next_hash) {
+		received_cb_called = true;
 		// check that the received hash matches:
 		EXPECT_EQ(next_hash, test_hash);
 		// check that the received message matches:
@@ -70,6 +78,6 @@ TEST(scout_api, get)
 
 	hash target_hash;
 	get(fake_dht, target_hash, received_cb);
-	// check that ImmutableGet was called:
-	EXPECT_TRUE(fake_dht.immutableGetCalled);
+	// check that the received callback was called:
+	EXPECT_TRUE(received_cb_called);
 }
