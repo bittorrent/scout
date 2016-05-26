@@ -54,6 +54,10 @@ ECHO "OS =" [ os.name ] ;
 
 use-project /ut_dht : ut_dht ;
 use-project /ut_utils : ut_dht/ut_utils ;
+use-project /miniupnpc : libminiupnpc ;
+use-project /natpmpc : libnatpmp ;
+
+lib Iphlpapi : : <name>Iphlpapi ;
 
 feature dhtd : on verbose off : composite propagated link-incompatible ;
 feature.compose <dhtd>on : <define>g_log_dht=1 <define>_DEBUG_DHT=1 ;
@@ -66,6 +70,7 @@ local usage-requirements =
 	<include>GSL/include
 	<include>include
 	<include>$(BOOST_ROOT)
+	<include>.
 	<define>GSL_THROW_ON_CONTRACT_VIOLATION
 	<define>BOOST_ASIO_HAS_STD_CHRONO
 	;
@@ -74,15 +79,20 @@ lib scout
 	: # sources
 	src/dht_session.cpp
 	src/file.cpp
+	src/LoadLibraryList.cpp
 	src/scout.cpp
 	src/sockaddr.cpp
+	src/upnp-portmap.cpp
 	src/utils.cpp
 	: # requirements
 	<threading>multi
 	<library>/ut_dht//ut_dht/<link>static
 	<library>/ut_utils//ut_utils/<link>static
+	<library>/miniupnpc//miniupnpc/<link>static
+	<library>/natpmpc//natpmpc/<link>static
 	<library>boost_system
 	<library>sodium
+	<target-os>windows:<library>Iphlpapi
 	<target-os>windows:<define>_CRT_SECURE_NO_WARNINGS
 	<target-os>windows:<define>_SCL_SECURE_NO_WARNINGS
 	$(usage-requirements)

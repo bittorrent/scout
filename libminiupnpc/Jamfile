@@ -1,0 +1,21 @@
+
+lib miniupnpc : [ glob *.c : .git minihttptestserver.c minixmlvalid.c ]
+	: # requirements
+	<include>.
+	<define>_BSD_SOURCE
+	<define>_GNU_SOURCE
+	<target-os>windows:<define>_WIN32
+	<target-os>windows:<define>STATICLIB
+	# work around a bug in the clang toolset
+	# it uses the c++ compiler to build C code
+	<cxxflags>-std=c99
+	<cflags>-std=c99
+
+	<target-os>windows:<define>_WIN32
+	: # default build
+	<link>static
+	: # usage requirements
+	<include>.
+	<target-os>windows:<define>STATICLIB
+	;
+

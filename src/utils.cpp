@@ -78,16 +78,18 @@ void log_debug(char const* fmt, ...)
 {
 	va_list vl;
 	va_start(vl, fmt);
-	fprintf(stderr, fmt, vl);
+	vfprintf(stderr, fmt, vl);
 	va_end(vl);
+	fprintf(stderr, "\n");
 }
 
 void log_error(char const* fmt, ...)
 {
 	va_list vl;
 	va_start(vl, fmt);
-	fprintf(stderr, fmt, vl);
+	vfprintf(stderr, fmt, vl);
 	va_end(vl);
+	fprintf(stderr, "\n");
 }
 
 std::vector<char> decrypt_buffer(std::vector<char> buffer, secret_key_span sk)
