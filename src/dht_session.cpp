@@ -559,11 +559,7 @@ dht_session::dht_session()
 
 dht_session::~dht_session()
 {
-	m_state = QUITTING;
-	m_dht->Enable(false, 0);
-	m_dht_timer.cancel();
-	m_ios.stop();
-	m_thread.join();
+	stop();
 }
 
 int dht_session::start()
@@ -573,6 +569,16 @@ int dht_session::start()
 	std::promise<int> promise;
 	m_thread = std::move(std::thread(&dht_session::network_thread_fun, this, std::ref(promise)));
 	return promise.get_future().get();
+}
+
+void dht_session::stop()
+{
+	if (m_state != RUNNING) return;
+	m_state = QUITTING;
+	m_dht->Enable(false, 0);
+	m_dht_timer.cancel();
+	m_ios.stop();
+	m_thread.join();
 }
 
 void dht_session::synchronize(secret_key_span shared_key, std::vector<entry> const& entries
