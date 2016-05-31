@@ -575,7 +575,7 @@ int dht_session::start()
 	return promise.get_future().get();
 }
 
-void dht_session::synchronize(secret_key_span shared_key, std::vector<entry>& entries
+void dht_session::synchronize(secret_key_span shared_key, std::vector<entry> const& entries
 	, entry_updated entry_cb, finalize_entries finalize_cb, sync_finished finished_cb)
 {
 	m_ios.post([=,&entries]()

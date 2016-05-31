@@ -302,7 +302,7 @@ int put_data_callback(void* ctx, std::vector<char> const& buffer, int64 seq, Soc
 	return 0;
 }
 
-void synchronize(IDht& dht, secret_key_span shared_key, std::vector<entry>& entries
+void synchronize(IDht& dht, secret_key_span shared_key, std::vector<entry> const& entries
 	, entry_updated entry_cb, finalize_entries finalize_cb, sync_finished finished_cb)
 {
 	std::array<unsigned char, crypto_sign_PUBLICKEYBYTES> target_public;

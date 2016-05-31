@@ -163,7 +163,7 @@ using put_finished = std::function<void()>;
 // synchronize a list of entries with the DHT
 // this will first update the given vector with any new or updated entries from the DHT
 // then store the updated list in the DHT
-void synchronize(IDht& dht, secret_key_span shared_key, std::vector<entry>& entries
+void synchronize(IDht& dht, secret_key_span shared_key, std::vector<entry> const& entries
 	, entry_updated entry_cb, finalize_entries finalize_cb, sync_finished finished_cb);
 
 // store an immutable item in the DHT
