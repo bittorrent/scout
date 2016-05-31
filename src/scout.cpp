@@ -195,6 +195,14 @@ void get(IDht& dht, chash_span address, item_received received_cb)
 		hash next_hash;
 		// create a span of gsl::byte from the dht buffer:
 		gsl::span<gsl::byte const> buffer_span = gsl::as_bytes(gsl::as_span(buffer.data(), buffer.size()));
+
+		// skip the bencode length prefix
+		while (buffer_span.size() > 0) {
+			gsl::byte first = *buffer_span.begin();
+			buffer_span = buffer_span.subspan(1);
+			if (char(first) == ':') break;
+		}
+
 		// extract the message contents and the next hash from the DHT blob:
 		auto msg_contents = message_dht_blob_read(buffer_span, next_hash);
 		// cast the context pointer to an item_received callback and call it:
@@ -228,9 +236,9 @@ int put_callback(void* ctx, std::vector<char>& buffer, int64& seq, SockAddr src)
 	context->finalize_cb(entries);
 
 	// serialize the entries:
-	// TODO: size this vector appropriately
 	std::vector<char> final_buffer(1000);
-	serialize(entries, gsl::as_writeable_bytes(gsl::as_span(final_buffer)));
+	auto residue = serialize(entries, gsl::as_writeable_bytes(gsl::as_span(final_buffer)));
+	final_buffer.resize(final_buffer.size() - residue.size());
 
 	// encrypt the buffer:
 	buffer = encrypt_buffer(final_buffer, context->secret);
@@ -294,7 +302,7 @@ int put_data_callback(void* ctx, std::vector<char> const& buffer, int64 seq, Soc
 	return 0;
 }
 
-void synchronize(IDht& dht, secret_key_span shared_key, std::vector<entry>& entries
+void synchronize(IDht& dht, secret_key_span shared_key, std::vector<entry> const& entries
 	, entry_updated entry_cb, finalize_entries finalize_cb, sync_finished finished_cb)
 {
 	std::array<unsigned char, crypto_sign_PUBLICKEYBYTES> target_public;
