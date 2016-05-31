@@ -15,11 +15,17 @@ public:
 	virtual void Tick() {}
 	virtual void Vote(void *ctx, const sha1_hash* info_hash, int vote, DhtVoteCallback* callb) {}
 
+	std::vector<char> putDataCallbackBuffer;
+
 	virtual void Put(const byte * pkey, const byte * skey, DhtPutCallback* put_callback,
 		DhtPutCompletedCallback * put_completed_callback, DhtPutDataCallback* put_data_callback,
 		void *ctx, int flags = 0, int64 seq = 0)
 	{
-
+		SockAddr src;
+		// call the put data callback with the buffer we've previously filled:
+		put_data_callback(ctx, putDataCallbackBuffer, seq, src);
+		put_callback(ctx, putDataCallbackBuffer, seq, src);
+		put_completed_callback(ctx);
 	}
 
 	std::vector<char> immutableData;

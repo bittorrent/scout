@@ -81,3 +81,123 @@ TEST(scout_api, get)
 	// check that the received callback was called:
 	EXPECT_TRUE(received_cb_called);
 }
+
+TEST(scout_api, synchronize)
+{
+	// initialize fake dht:
+	FakeDhtImpl fake_dht = FakeDhtImpl();
+	init(fake_dht);
+
+	std::array<char, 10> const test_content[]
+	{ { 0, 1, 2, 3, 4, 5, 6, 7 , 8, 9 },
+	{ 10, 11, 12, 13, 14, 15, 16, 17 , 18, 19 },
+	{ 20, 21, 22, 23, 24, 25, 26, 27 , 28, 29 } };
+
+	// create a vector of entries for testing:
+	std::vector<entry> entries;
+
+	int num_entries = 3;
+
+	for (int i = 0; i < num_entries; ++i)
+	{
+		entries.emplace_back(i);
+		entries.back().assign(gsl::as_span(test_content[i]));
+	}
+
+	// generate Alice's key pair (our keypair):
+	std::pair<secret_key, public_key> aliceKeyPair = generate_keypair();
+	// generate Bob's key pair (remote contact keypair):
+	std::pair<secret_key, public_key> bobKeyPair = generate_keypair();
+	// perform a DH exchange between our private key and the remote's public:
+	secret_key shared_key = key_exchange(aliceKeyPair.first, bobKeyPair.second);
+
+	bool entry_cb_called = false;
+	bool finalize_cb_called = false;
+	bool finished_cb_called = false;
+
+	// create some fake modified entries from the initial vector of entries:
+	std::vector<entry> entries_modified = entries;
+	// add a new entry:
+	entries_modified.emplace_back(num_entries + 1);
+	char new_entry_content[] = { 30, 31, 32, 33, 34, 35, 36, 37, 38, 39 };
+	entries_modified.back().assign(gsl::as_span(new_entry_content));
+	// modify one of the existing entries:
+	entries_modified[0].update_seq(entries_modified[0].seq() + 1);
+	std::vector<gsl::byte> modified_entry_content = { b(6), b(6), b(6) };
+	entries_modified[0].update_contents(modified_entry_content);
+	// format the entries into a dht blob and feed it into the fake dht in order 
+	// to simulate updated entries for the put data callback:
+	std::vector<char> buffer(1000);
+	serialize(entries_modified, gsl::as_writeable_bytes(gsl::as_span(buffer)));
+	buffer = encrypt_buffer(buffer, shared_key);
+	std::string prefix = std::to_string(buffer.size()) + ":";
+	buffer.insert(buffer.begin(), prefix.begin(), prefix.end());
+	fake_dht.putDataCallbackBuffer = buffer;
+
+	entry_updated entry_cb = [&](entry const& e) {
+		entry_cb_called = true;
+		// check that this callback is being called for the modified entries:
+		if (e.seq() == 1) 
+		{	// this is the newly added entry...
+			// check that the new entry matches:
+			EXPECT_TRUE(std::equal(e.value().begin(), e.value().end(), entries_modified.back().value().begin()));
+		}
+		else 
+		{	// this is the updated entry:
+			EXPECT_TRUE(e.seq() == 2);
+			// check that the updated entry matches:
+			EXPECT_TRUE(std::equal(e.value().begin(), e.value().end(), modified_entry_content.begin()));
+		}
+	};
+
+	finalize_entries finalize_cb = [&](std::vector<entry>& final_entries) {
+		finalize_cb_called = true;
+		// check that the number of entries match:
+		EXPECT_TRUE(final_entries.size() == entries_modified.size());
+		// check that all the entries match:
+		int i = 0;
+		for (auto const &e : final_entries)
+		{
+			EXPECT_TRUE(e == entries_modified[i]);
+			i++;
+		}
+		// modify an entry (we'll check in the finalize callback, that the modification has been made):
+		final_entries.back().assign(modified_entry_content);
+		// apply the same change to the original entries list so we can compare:
+		entries_modified.back().assign(modified_entry_content);
+	};
+
+	sync_finished finished_cb = [&] {
+		finished_cb_called = true;
+		// check that the final dht buffer contains the modification we've made in finalize_cb:
+
+		// skip the length prefix
+		int skip = 0;
+		while (skip < int(buffer.size())) {
+			++skip;
+			if (buffer[skip - 1] == ':') break;
+		}
+		std::vector<char> buffer2(fake_dht.putDataCallbackBuffer.begin() + skip, fake_dht.putDataCallbackBuffer.end());
+		std::vector<char> plaintext = decrypt_buffer(buffer2, shared_key);
+		// parse the blob into a vector of entries:
+		std::vector<entry> blob_entries;
+		parse(gsl::as_bytes(gsl::as_span(plaintext)), blob_entries);
+
+		// check that the number of entries match:
+		EXPECT_TRUE(blob_entries.size() == entries_modified.size());
+		// check that all the entries match:
+		int i = 0;
+		for (auto const &e : blob_entries)
+		{
+			EXPECT_TRUE(e == entries_modified[i]);
+			i++;
+		}
+	};
+
+	synchronize(fake_dht, shared_key, entries, entry_cb, finalize_cb, finished_cb);
+
+	// check that the callbacks have been called:
+	EXPECT_TRUE(entry_cb_called);
+	EXPECT_TRUE(finalize_cb_called);
+	EXPECT_TRUE(finished_cb_called);
+}
