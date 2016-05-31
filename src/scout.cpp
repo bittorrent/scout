@@ -236,9 +236,9 @@ int put_callback(void* ctx, std::vector<char>& buffer, int64& seq, SockAddr src)
 	context->finalize_cb(entries);
 
 	// serialize the entries:
-	// TODO: size this vector appropriately
 	std::vector<char> final_buffer(1000);
-	serialize(entries, gsl::as_writeable_bytes(gsl::as_span(final_buffer)));
+	auto residue = serialize(entries, gsl::as_writeable_bytes(gsl::as_span(final_buffer)));
+	final_buffer.resize(final_buffer.size() - residue.size());
 
 	// encrypt the buffer:
 	buffer = encrypt_buffer(final_buffer, context->secret);
