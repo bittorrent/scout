@@ -195,6 +195,14 @@ void get(IDht& dht, chash_span address, item_received received_cb)
 		hash next_hash;
 		// create a span of gsl::byte from the dht buffer:
 		gsl::span<gsl::byte const> buffer_span = gsl::as_bytes(gsl::as_span(buffer.data(), buffer.size()));
+
+		// skip the bencode length prefix
+		while (buffer_span.size() > 0) {
+			gsl::byte first = *buffer_span.begin();
+			buffer_span = buffer_span.subspan(1);
+			if (char(first) == ':') break;
+		}
+
 		// extract the message contents and the next hash from the DHT blob:
 		auto msg_contents = message_dht_blob_read(buffer_span, next_hash);
 		// cast the context pointer to an item_received callback and call it:
