@@ -161,10 +161,37 @@ TEST(scout_api, synchronize)
 			EXPECT_TRUE(e == entries_modified[i]);
 			i++;
 		}
+		// modify an entry (we'll check in the finalize callback, that the modification has been made):
+		final_entries.back().assign(modified_entry_content);
+		// apply the same change to the original entries list so we can compare:
+		entries_modified.back().assign(modified_entry_content);
 	};
 
 	sync_finished finished_cb = [&] {
 		finished_cb_called = true;
+		// check that the final dht buffer contains the modification we've made in finalize_cb:
+
+		// skip the length prefix
+		int skip = 0;
+		while (skip < int(buffer.size())) {
+			++skip;
+			if (buffer[skip - 1] == ':') break;
+		}
+		std::vector<char> buffer2(fake_dht.putDataCallbackBuffer.begin() + skip, fake_dht.putDataCallbackBuffer.end());
+		std::vector<char> plaintext = decrypt_buffer(buffer2, shared_key);
+		// parse the blob into a vector of entries:
+		std::vector<entry> blob_entries;
+		parse(gsl::as_bytes(gsl::as_span(plaintext)), blob_entries);
+
+		// check that the number of entries match:
+		EXPECT_TRUE(blob_entries.size() == entries_modified.size());
+		// check that all the entries match:
+		int i = 0;
+		for (auto const &e : blob_entries)
+		{
+			EXPECT_TRUE(e == entries_modified[i]);
+			i++;
+		}
 	};
 
 	synchronize(fake_dht, shared_key, entries, entry_cb, finalize_cb, finished_cb);
