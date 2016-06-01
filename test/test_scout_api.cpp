@@ -8,6 +8,15 @@
 using namespace scout;
 using b = gsl::byte;
 
+namespace
+{
+	void init(IDht &dht)
+	{
+		// set the DHT callback:
+		dht.SetSHACallback(&sha1_fun);
+	}
+}
+
 TEST(scout_api, put)
 {
 	FakeDhtImpl fake_dht = FakeDhtImpl();

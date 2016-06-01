@@ -187,7 +187,6 @@ void put(IDht& dht, list_token const& token, gsl::span<gsl::byte const> contents
 // if the message is not found then received_cb will be called with empty contents
 void get(IDht& dht, chash_span address, item_received received_cb);
 
-void init(IDht& dht);
 }
 
 #endif
