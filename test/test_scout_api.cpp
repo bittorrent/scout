@@ -8,6 +8,15 @@
 using namespace scout;
 using b = gsl::byte;
 
+namespace
+{
+	void init(IDht &dht)
+	{
+		// set the DHT callback:
+		dht.SetSHACallback(&sha1_fun);
+	}
+}
+
 TEST(scout_api, put)
 {
 	FakeDhtImpl fake_dht = FakeDhtImpl();
@@ -59,7 +68,11 @@ TEST(scout_api, get)
 
 	// form a dht blob from the message and hash and save it in the fake DHT:
 	auto dht_blob = message_dht_blob_write(test_msg_span, test_hash_span);
-	fake_dht.immutableData.assign((char*)dht_blob.data(), (char*)dht_blob.data() + dht_blob.size());
+	std::string prefix = std::to_string(dht_blob.size()) + ":";
+	fake_dht.immutableData.assign(prefix.begin(), prefix.end());
+	fake_dht.immutableData.insert(
+		fake_dht.immutableData.end()
+		, (char*)dht_blob.data(), (char*)dht_blob.data() + dht_blob.size());
 
 	// create a message list:
 	list_head msg_list;
@@ -173,9 +186,9 @@ TEST(scout_api, synchronize)
 
 		// skip the length prefix
 		int skip = 0;
-		while (skip < int(buffer.size())) {
+		while (skip < int(fake_dht.putDataCallbackBuffer.size())) {
 			++skip;
-			if (buffer[skip - 1] == ':') break;
+			if (fake_dht.putDataCallbackBuffer[skip - 1] == ':') break;
 		}
 		std::vector<char> buffer2(fake_dht.putDataCallbackBuffer.begin() + skip, fake_dht.putDataCallbackBuffer.end());
 		std::vector<char> plaintext = decrypt_buffer(buffer2, shared_key);

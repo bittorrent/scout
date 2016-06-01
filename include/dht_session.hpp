@@ -42,6 +42,7 @@ public:
 	~dht_session();
 
 	int start();
+	void stop();
 
 	// synchronize a list of entries with the DHT
 	// this will first update the given vector with any new or updated entries from the DHT

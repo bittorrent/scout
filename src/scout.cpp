@@ -35,13 +35,6 @@ namespace
 	};
 }
 
-// do any global initialization for the scout library here:
-void init(IDht &dht)
-{
-	// set the DHT callback:
-	dht.SetSHACallback(&sha1_fun);
-}
-
 std::pair<entry, gsl::span<gsl::byte const>> entry::parse(gsl::span<gsl::byte const> input)
 {
 	entry_header header;

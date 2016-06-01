@@ -21,7 +21,9 @@ This function will block until the dht node thread has exited. If stop is not ca
 
 # Generating a key pair
 
-TODO
+Scout provides the `generate_keypair` function to generate a new ed25519 key pair.
+
+	std::pair<scout::secret_key, scout::public_key> keypair = scout::generate_keypair();
 
 # Callbacks
 
