@@ -57,8 +57,18 @@ public:
 	dht_session();
 	~dht_session();
 
+	// start the dht client
+	// the client will start listening on a random port and bootstrap its routing table
+	// if this function returns zero the session is ready to handle requests
+	// otherwise an error occurred
 	int start();
+
+	// stop the client
+	// this will terminate all network activity and any outstanding requests will be aborted
 	void stop();
+
+	// Note: See the corresponding functions in scout.hpp for more details on
+	// each type of request.
 
 	// synchronize a list of entries with the DHT
 	// this will first update the given vector with any new or updated entries from the DHT
