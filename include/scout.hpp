@@ -161,28 +161,35 @@ using item_received = std::function<void(std::vector<gsl::byte> contents, hash c
 // called when a put has completed
 using put_finished = std::function<void()>;
 
-// synchronize a list of entries with the DHT
-// this will first get entries from the DHT and call entry_cb for any which are not in
+// Synchronize a list of entries with the DHT. First entries are read from the
+// DHT then an updated list is written back.
+//
+// entry_cb will be called for any entries retrived from the DHT which are not in
 // the passed in entries vector or are newer than the entry found there
+//
 // finalize_cb will be called once the get operation has completed. It is passed a vector
 // containing the passed in entries merged with any new or updated entries retrived from the DHT.
 // The finalize_cb provides a final opportunity to modify the list of entries before it is written.
+//
 // All entries in the vector passed to finalize_cb are written to the DHT. Once the put operation
 // is complete finished_cb is invoked
 void synchronize(IDht& dht, secret_key_span shared_key, std::vector<entry> const& entries
 	, entry_updated entry_cb, finalize_entries finalize_cb, sync_finished finished_cb);
 
 // store an immutable item in the DHT
+//
 // the token must be a value returned from list_head::push_front called with
 // the contents
+//
 // finished_cb will be called once the put operation has completed
 void put(IDht& dht, list_token const& token, gsl::span<gsl::byte const> contents
 	, put_finished finished_cb);
 
-// retrieve an immutable item from the DHT
-// get the item referenced by the given hash
+// retrieve an immutable item from the DHT identified by the given hash
+//
 // received_cb will be called with the message contents and the hash of the next
 // message in the list
+//
 // the next hash will be all zeros if it is the last message in the list
 // if the message is not found then received_cb will be called with empty contents
 void get(IDht& dht, chash_span address, item_received received_cb);
