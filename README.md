@@ -42,7 +42,7 @@ To communicate entries between peers, scout uses a synchronize operation which r
 	scout::secret_key shared_secret = scout::key_exchange(my_secret_key, remote_public_key);
 	ses.synchronize(shared_secret, entries, entry_updated, finalize_entries, sync_finished);
 
-The `entries` vector must remain valid until the `sync_finished` callback is invoked. The `entry_updated` callback will be invoked when a new or updated entry is retrieved from the DHT. The `finalize_entries` callback will be invoked after all updates have been retrieved and before the updated entry vector is stored in the DHT, it provides the application a final opportunity to update the entries. The `sync_finished` callback is invoked once all store requests have completed, any resources associated with the operation may be freed by this function.
+The entries vector should contain the entries which the application is currently aware of. The `entry_updated` callback will be invoked when a new or updated entry is retrieved from the DHT. The `finalize_entries` callback will be invoked after all updates have been retrieved and before the updated entry vector is stored in the DHT, it provides the application a final opportunity to update the entries. The `sync_finished` callback is invoked once all store requests have completed, any resources associated with the operation may be freed by this function.
 
 # Storing offline messages
 
