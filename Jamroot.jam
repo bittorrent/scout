@@ -52,8 +52,8 @@ else
 
 ECHO "OS =" [ os.name ] ;
 
-use-project /ut_dht : ut_dht ;
-use-project /ut_utils : ut_dht/ut_utils ;
+use-project /btdht : btdht ;
+use-project /btutils : btdht/btutils ;
 use-project /miniupnpc : libminiupnpc ;
 use-project /natpmpc : libnatpmp ;
 
@@ -86,8 +86,8 @@ lib scout
 	src/utils.cpp
 	: # requirements
 	<threading>multi
-	<library>/ut_dht//ut_dht/<link>static
-	<library>/ut_utils//ut_utils/<link>static
+	<library>/btdht//btdht/<link>static
+	<library>/btutils//btutils/<link>static
 	<library>/miniupnpc//miniupnpc/<link>static
 	<library>/natpmpc//natpmpc/<link>static
 	<library>boost_system

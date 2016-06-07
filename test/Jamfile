@@ -4,10 +4,10 @@ import modules ;
 BOOST_ROOT = [ modules.peek : BOOST_ROOT ] ;
 use-project /boost : $(BOOST_ROOT) ;
 use-project /parent : .. ;
-use-project /ut_dht : ../ut_dht ;
+use-project /btdht : ../btdht ;
 
-GTEST_ROOT = ../ut_dht/ut_utils/vendor/gtest-1.6.0 ;
-GMOCK_ROOT = ../ut_dht/ut_utils/vendor/gmock-1.6.0 ;
+GTEST_ROOT = ../btdht/btutils/vendor/gtest-1.6.0 ;
+GMOCK_ROOT = ../btdht/btutils/vendor/gmock-1.6.0 ;
 
 lib test_lib
 	: # sources
@@ -59,5 +59,5 @@ test-suite communicator-tests :
 	[ run test_scout_api.cpp ]
 	;
 	
-# build-project ../ut_dht/unittests ;
-# build-project ../ut_dht/ut_utils/unittests ;
+# build-project ../btdht/unittests ;
+# build-project ../btdht/btutils/unittests ;

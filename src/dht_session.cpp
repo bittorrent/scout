@@ -81,7 +81,7 @@ namespace
 	}
 #endif
 
-	// This adapts our socket class to fit what ut_dht expects. All traffic via this
+	// This adapts our socket class to fit what btdht expects. All traffic via this
 	// adaptor is DHT traffic.
 	struct udp_socket_adaptor : UDPSocketInterface
 	{
