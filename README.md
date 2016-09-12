@@ -6,6 +6,14 @@ Scout is a library enabling two users to contact each other over the Internet us
 
 Scout requires Boost 1.58 or newer and Libsodium 1.0 or newer
 
+# Building
+
+Scout uses Boost.Build version 2 to build. For information on installing BBv2 see the [Boost.Build manual](http://www.boost.org/build/doc/html/bbv2/installation.html). By default scout uses the versions of boost and libsodium which are installed on the system. If you are building on Windows you will need to specify the paths to the boost and libsodium source trees using the BOOST_ROOT and SODIUM_ROOT environment variables. Example commands to build scout on Windows:
+
+    C:\scout> set BOOST_ROOT=C:\boost_1_60_0
+    C:\scout> set SODIUM_ROOT=C:\libsodium-1.0.8
+    C:\scout> bjam toolset=msvc-14
+
 # Setting up a DHT session
 
 Most users will want to use the dht_session class to easily set up a DHT node which can be used with the rest of scout's functions. To start a node create an instance of dht_session and call the start function.
@@ -37,7 +45,7 @@ Data stored in the DHT can only be expected to remain there for up to two hours.
 
 Scout stores contact information as a vector of entries. Each entry must be assigned an id which is unique within that vector. The contents of the entries are left up to the application. Scout encrypts the entry vector before storing it in the DHT so applications do not need to encrypt each entry's contents.
 
-To communicate entries between peers, scout uses a synchronize operation which retrieves the existing vector of entries from the DHT then writes a new vector with whatever updates the application specifies. To synchronize with a peer you need to have a shared secret to use as a key. Scout provides a key echanges function with uses Diffie-Hellman to generate a shared secret from the user's private key and a remote peer's public key.
+To communicate entries between peers, scout uses a synchronize operation which retrieves the existing vector of entries from the DHT then writes a new vector with whatever updates the application specifies. To synchronize with a peer you need to have a shared secret to use as a key. Scout provides a key exchange function with uses Diffie-Hellman to generate a shared secret from the user's private key and a remote peer's public key.
 
 	scout::secret_key shared_secret = scout::key_exchange(my_secret_key, remote_public_key);
 	ses.synchronize(shared_secret, entries, entry_updated, finalize_entries, sync_finished);
