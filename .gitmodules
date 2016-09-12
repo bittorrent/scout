@@ -3,4 +3,4 @@
 	url = https://github.com/Microsoft/GSL.git
 [submodule "btdht"]
 	path = btdht
-	url = git@github.com:bittorrent/libbtdht.git
+	url = https://github.com/bittorrent/libbtdht.git
