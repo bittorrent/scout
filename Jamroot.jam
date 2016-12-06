@@ -24,8 +24,6 @@ if (SODIUM_ROOT)
 	LIBSODIUM_SRC = [ path.glob-tree $(SODIUM_ROOT)/src/libsodium : *.c
 	  : .git try.c ] ;
 
-	install sodium_version : $(SODIUM_ROOT)/builds/msvc/version.h : <location>$(SODIUM_ROOT)/src/libsodium/include/sodium ;
-
 	lib sodium
 		: # sources
 		$(LIBSODIUM_SRC)
@@ -33,7 +31,6 @@ if (SODIUM_ROOT)
 		<include>$(SODIUM_ROOT)/src/libsodium/include
 		<include>$(SODIUM_ROOT)/src/libsodium/include/sodium
 		<link>static
-		<dependency>sodium_version
 
 		# TODO: make this conditional on architecture
 		<define>NATIVE_LITTLE_ENDIAN
