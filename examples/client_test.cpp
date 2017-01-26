@@ -179,7 +179,7 @@ int main(int argc, char const* argv[])
 		e.assign(content);
 		std::vector<scout::entry> entries;
 		entries.push_back(e);
-		ses.synchronize(shared_secret, entries
+		ses.synchronize(shared_secret, std::move(entries)
 			, [](entry const&) {}
 			, [=](std::vector<entry>& entries)
 			{

@@ -591,18 +591,18 @@ void dht_session::stop()
 {
 	if (m_state != RUNNING) return;
 	m_state = QUITTING;
-	m_dht->Enable(false, 0);
+	m_dht->Shutdown();
 	m_dht_timer.cancel();
 	m_ios.stop();
 	m_thread.join();
 }
 
-void dht_session::synchronize(secret_key_span shared_key, std::vector<entry> const& entries
+void dht_session::synchronize(secret_key_span shared_key, std::vector<entry> entries
 	, entry_updated entry_cb, finalize_entries finalize_cb, sync_finished finished_cb)
 {
-	m_ios.post([=,&entries]()
+	m_ios.post([=, captured_entries = std::move(entries)]()
 	{
-		::synchronize(*m_dht, shared_key, entries, entry_cb, finalize_cb, finished_cb);
+		::synchronize(*m_dht, shared_key, captured_entries, entry_cb, finalize_cb, finished_cb);
 	});
 }
 
