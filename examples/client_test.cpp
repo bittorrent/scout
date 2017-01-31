@@ -198,11 +198,11 @@ int main(int argc, char const* argv[])
 	{
 		++argv;
 		--argc;
-		if (argc < 2) usage();
+		if (argc < 1) usage();
 
 		scout::list_head head;
-		gsl::span<gsl::byte const> contents((gsl::byte const*)argv[1]
-			, (gsl::byte const*)argv[1] + std::strlen(argv[1]));
+		gsl::span<gsl::byte const> contents((gsl::byte const*)argv[0]
+			, (gsl::byte const*)argv[0] + std::strlen(argv[0]));
 		scout::list_token token = head.push_front(contents);
 		ses.put(token, contents, [&]() { op_complete.notify_all(); });
 		std::cout << "inserted message with hash "
