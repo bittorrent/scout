@@ -1,4 +1,5 @@
 bin
+examples/dht.dat
 
 # Visual studio files
 *.sln
