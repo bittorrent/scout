@@ -27,7 +27,7 @@ limitations under the License.
 #include "libminiupnpc/miniupnpc.h"
 #include "libminiupnpc/upnpcommands.h"
 #include "libminiupnpc/upnperrors.h"
-#include "upnp-portmap.h"
+//#include "upnp-portmap.h"
 
 #ifdef _WIN32
 #include <Iphlpapi.h>

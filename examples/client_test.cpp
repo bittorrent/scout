@@ -185,9 +185,9 @@ int main(int argc, char const* argv[])
 			{
 				for (entry& e : entries)
 				{
-					if (e.value() != content)
-						e.assign(content);
-					std::cout << e.id() << ' ' << std::string(e.value().begin(), e.value().end())
+					//if (e.value() != content)
+					//	e.assign(content);
+					std::cout << e.id() << ' ' << std::string((char*)e.value().data(), e.value().size())
 						<< '\n';
 				}
 			}

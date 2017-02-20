@@ -29,4 +29,6 @@ using boost::asio::ip::udp;
 SockAddr endpoint_to_sockaddr(udp::endpoint const& ep);
 udp::endpoint sockaddr_to_endpoint(SockAddr const& saddr);
 
+#define sockaddr_to_address(a) sockaddr_to_endpoint(SockAddr(*(SOCKADDR_STORAGE*)a)).address()
+
 #endif

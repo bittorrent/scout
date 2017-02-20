@@ -8,6 +8,14 @@ Scout requires Boost 1.58 or newer and Libsodium 1.0 or newer
 
 # Building
 
+## MacOS
+
+	brew install boost boost-build libsodium
+	cd examples
+	./build.sh
+
+## Windows
+
 Scout uses Boost.Build version 2 to build. For information on installing BBv2 see the [Boost.Build manual](http://www.boost.org/build/doc/html/bbv2/installation.html). By default scout uses the versions of boost and libsodium which are installed on the system. If you are building on Windows you will need to specify the paths to the boost and libsodium source trees using the BOOST_ROOT and SODIUM_ROOT environment variables. Example commands to build scout on Windows:
 
     C:\scout> set BOOST_ROOT=C:\boost_1_60_0

@@ -6,13 +6,6 @@ import path ;
 BOOST_ROOT = [ modules.peek : BOOST_ROOT ] ;
 SODIUM_ROOT = [ modules.peek : SODIUM_ROOT ] ;
 
-if (BOOST_ROOT)
-{
-	ECHO "building boost from source directory: " $(BOOST_ROOT) ;
-	use-project /boost : $(BOOST_ROOT) ;
-	alias boost_system : /boost/system//boost_system : : : <include>$(BOOST_ROOT) ;
-}
-else
 {
 	lib boost_system : : <name>boost_system : : ;
 }
@@ -79,10 +72,10 @@ lib scout
 	: # sources
 	src/dht_session.cpp
 	src/file.cpp
-	src/LoadLibraryList.cpp
+	#src/LoadLibraryList.cpp
 	src/scout.cpp
 	src/sockaddr.cpp
-	src/upnp-portmap.cpp
+	#src/upnp-portmap.cpp
 	src/utils.cpp
 	: # requirements
 	<threading>multi

@@ -61,6 +61,32 @@ std::unordered_set<ino_t> file::m_locked_inodes;
 #define posix_fsync fsync
 #endif
 
+
+template <class F>
+struct scope_guard
+{
+	scope_guard(F const& f) : m_f(f), m_valid(true) {}
+
+	scope_guard(scope_guard const & sg) = delete;
+	scope_guard& operator=(scope_guard const& sg) = delete;
+
+	scope_guard(scope_guard&& sg)
+		: m_f(std::move(sg.m_f))
+		, m_valid(true) {
+		sg.m_valid = false;
+	}
+
+	void disarm() { m_valid = false; }
+
+	~scope_guard() { if (m_valid) m_f(); }
+	F m_f;
+	bool m_valid;
+
+};
+
+template <class F>
+scope_guard<F> make_guard(F f) { return scope_guard<F>(f); }
+
 file::~file()
 {
 	close();
