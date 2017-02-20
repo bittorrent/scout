@@ -11,6 +11,7 @@ Scout requires Boost 1.58 or newer and Libsodium 1.0 or newer
 ## MacOS
 
 	brew install boost boost-build libsodium
+	git submodule update --init --recursive
 	cd examples
 	./build.sh
 
