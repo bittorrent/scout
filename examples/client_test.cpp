@@ -173,7 +173,8 @@ int main(int argc, char const* argv[])
 		if (pk_str.size() != pk.size()) usage();
 		std::memcpy(pk.data(), pk_str.data(), pk.size());
 		scout::secret_key shared_secret = scout::key_exchange(sk, pk);
-		scout::entry e(std::uint32_t(std::stoul(argv[2])));
+		std::uint32_t eid = std::uint32_t(std::stoul(argv[2]));
+		scout::entry e(eid);
 		std::vector<gsl::byte> content((gsl::byte const*)argv[3]
 			, (gsl::byte const*)argv[3] + std::strlen(argv[3]));
 		e.assign(content);
@@ -185,7 +186,7 @@ int main(int argc, char const* argv[])
 			{
 				for (entry& e : entries)
 				{
-					if (e.value() != content)
+					if (e.id() == eid && e.value() != content)
 						e.assign(content);
 					std::cout << e.id() << ' ' << std::string(e.value().begin(), e.value().end())
 						<< '\n';
